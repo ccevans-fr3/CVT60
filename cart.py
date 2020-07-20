@@ -44,15 +44,15 @@ wait = 8 / 1000
 
 pi = pigpio.pi()
 
-# Servo 1 (measure) connected to GPIO 21 (pin 40) and GND (pin 39) with PWM at 50Hz
-servo_1_pin = 21
-pi.set_mode(servo_1_pin, pigpio.OUTPUT)
-pi.set_PWM_frequency(servo_1_pin, 50)
+# Servo (measure) connected to GPIO 21 (pin 40) and GND (pin 39) with PWM at 50Hz
+servo_pin = 21
+pi.set_mode(servo_pin, pigpio.OUTPUT)
+pi.set_PWM_frequency(servo_pin, 50)
 
-# Servo 2 (funnel) connected to GPIO 20 (pin 38) and GND (pin 39) with PWM at 50Hz
-servo_2_pin = 20
-pi.set_mode(servo_2_pin, pigpio.OUTPUT)
-pi.set_PWM_frequency(servo_2_pin, 50)
+# DC vibration motor connected to GPIO 5 (pin 29) and GND (pin 30) with PWM at 50Hz
+dc_pin = 5
+pi.set_mode(dc_pin, pigpio.OUTPUT)
+pi.write(dc_pin, 1)
 
 # Limit switches connected to GPIO 18 (pin 12) and GND (pin 14)
 lmt_pin = 18
@@ -68,6 +68,22 @@ pi.set_pull_up_down(stop_pin, pigpio.PUD_UP)
 stepper_kit = MotorKit()
 stepper_1 = 0
 stepper_2 = 0
+
+# Loading and dispensing angles for measure servo
+load_angle = {
+    1:0,
+    2:31,
+    3:64.8,
+    4:101.3,
+    5:140.2
+    }
+dispense_angle = {
+    1:15.5,
+    2:47.9,
+    3:83,
+    4:120.7,
+    5:160.9
+    }
 
 def get_day(i):
     switcher={
@@ -218,32 +234,21 @@ def set_servo_angle(servo, angle):
     pi.set_servo_pulsewidth(servo, pw)
     time.sleep(servo_wait)
     
-def dispense(i):
-    # servo_1_pin = measure
-    # servo_2_pin = funnel
-    offset = 40                         # Degrees when day 5 is in loading position
-    load_angle = offset + (4-i)*35      # Position of measure for day i
-    rest_angle = 120                    # Degrees when funnel is in resting position
-        
-    # Loading sequence
-    set_servo_angle(servo_1_pin, load_angle)
+def vibrate(seconds):
+    pi.write(dc_pin, 0)
+    time.sleep(seconds)
+    pi.write(dc_pin, 1)
     time.sleep(0.5)
-    for i in range(3):
-        set_servo_angle(servo_2_pin, rest_angle - 60)       # Angle of funnel on percussive strokes
-        if i == 0: time.sleep(0.25)
-        set_servo_angle(servo_2_pin, rest_angle - 20)       # Backward angle of funnel
-    for i in range(12):
-        set_servo_angle(servo_2_pin, rest_angle - 45)       # Foreward angle of funnel
-        set_servo_angle(servo_2_pin, rest_angle - 20)       # Backward angle of funnel 
-    set_servo_angle(servo_2_pin, rest_angle)                # Move funnel to rest position
-    time.sleep(0.25)
     
-    # Dispensing sequence
-    for i in range(10):
-        set_servo_angle(servo_1_pin, load_angle - 40)       # Forward angle of measure
-        if i == 0: time.sleep(0.25)
-        set_servo_angle(servo_1_pin, load_angle - 20)       # Backward angle of measure
+def dispense(i):
+    # Load
+    set_servo_angle(load_angle[i] + offset)
     time.sleep(0.5)
+    vibrate(1)
+    # Dispense
+    set_servo_angle(dispense_angle[i] + offset)
+    time.sleep(0.25)
+    vibrate(1)
 
 def stop_callback(gpio, level, tick):
     for i in range(10):
@@ -258,9 +263,9 @@ def shutdown(result):
     stepper_kit.stepper1.release()
     stepper_kit.stepper2.release()
     # Release servos
-    #TODO update motors and release new DC motor
-    pi.set_servo_pulsewidth(servo_1_pin, 0)
-    pi.set_servo_pulsewidth(servo_2_pin, 0)
+    #TODO update motors and release DC motor
+    pi.set_servo_pulsewidth(servo_pin, 0)
+    pi.write(dc_pin, 1)
     # End servo PWM
     pi.stop()
     
