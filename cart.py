@@ -28,7 +28,7 @@ jar_diam = 78
 
 # Location of arm shoulder axis relative to jars in mm
 ori_x = jar_num_x*jar_diam / 2
-ori_y = -10
+ori_y = -6
 
 # Length of robot arm sections in mm
 arm_1 = 330
@@ -70,6 +70,7 @@ stepper_1 = 0
 stepper_2 = 0
 
 # Loading and dispensing angles for measure servo
+offset = 0
 load_angle = {
     1:0,
     2:31,
@@ -228,10 +229,10 @@ def start_steps(step_count_1, step_count_2):
         else:
             time.sleep(wait)
 
-def set_servo_angle(servo, angle):
-    servo_wait = 70 / 1000              # Time between shaking movements in milliseconds
+def set_servo_angle(angle):
+    servo_wait = 70 / 1000
     pw = angle * 2000/180 + 500
-    pi.set_servo_pulsewidth(servo, pw)
+    pi.set_servo_pulsewidth(servo_pin, pw)
     time.sleep(servo_wait)
     
 def vibrate(seconds):
@@ -301,14 +302,19 @@ try:
 
     # Home motors before beginning
     home()
-
-    # Go to predefined start position (x,y) before continuing cycle
-    # This is implemented to avoid dispenser hitting wall on the way to jar(0,0)
-    start_position(4,4)
-    time.sleep(0.5)
+    
     # Add calibration adjustment to both axes
     start_steps(int(stepper_cal_1*stepper_1_deg_to_step), int(stepper_cal_2*stepper_2_deg_to_step))
     time.sleep(0.5)
+    
+    # Go to predefined start position (x,y) before continuing cycle
+    # This is implemented to avoid dispenser hitting wall on the way to jar(0,0)
+    start_position(10,0)
+    time.sleep(5)
+    start_position(10,6)
+    time.sleep(5)
+    start_position(0,6)
+    time.sleep(5)
 
     # Run main dispensing procedure
     for x in range(jar_num_x):
