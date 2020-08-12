@@ -8,7 +8,7 @@ unit = sys.argv[1]
 result = sys.argv[2]
 
 scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('CVT60 logger-930552f40412.json', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name('cvt60logger-d07c36e7269f.json', scope)
 client = gspread.authorize(creds)
 
 for attempt in range(10):
@@ -22,6 +22,7 @@ for attempt in range(10):
         sheet.insert_row(row, index)
         break
 
-    except:
+    except Exception as e:
         print('Cannot connect to GoogleDrive')
+        print(e)
 
