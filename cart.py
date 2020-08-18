@@ -12,10 +12,10 @@ from subprocess import call
 # Serial number of CVT60 unit
 unit_number = '001'
 
-# Angle in degrees to add to bring axes parallel with wall when homed
-# (positive = toward wall, negative = away from wall)
-stepper_cal_1 = 2.5
-stepper_cal_2 = 2
+# Step adjustment to bring axes parallel with wall when homed
+# (positive = CW, negative = CCW)
+stepper_cal_1 = 2
+stepper_cal_2 = -2
 
 # Number of columns (x) and rows (y) of jars on cart
 jar_num_x = 11
@@ -64,9 +64,10 @@ dir_pin_2    =    20    # Second axis stepper direction
 ena_pin_2    =    19    # Second axis stepper enable (pin is default high)
 
 servo_pin    =    27    # Servo controlling measure plate, PWM at 50Hz
-dc_pin       =    04    # DC vibration motor
-lmt_pin      =    23    # Limit switches for homing (shared circuit)
-stop_pin     =    02    # Stop button for halting program
+dc_pin       =    4     # DC vibration motor
+lmt_pin_1    =    23    # Limit switch for homing first axis
+lmt_pin_2    =    22    # Limit switch for homing second axis
+stop_pin     =    2     # Stop button for halting program
 
 pi.set_mode(step_pin_1, pigpio.OUTPUT)
 pi.write(step_pin_1, 0)
@@ -147,10 +148,11 @@ def home():
     backup_degrees = 10     # Degrees to back up each arm
     axis_1_degrees = 190    # Degrees to move first axis before failing
     axis_2_degrees = 370    # Degrees to move second axis before failing
-    # TODO check sign of degrees to use for each stepper
+    #stepper_1_homed = False
+    #stepper_2_homed = False
 
     # Backup both axes before homing    
-    start_steps(int(backup_degrees*stepper_1_deg_to_step), 
+    start_steps(int(backup_degrees*stepper_1_deg_to_step)*(-1), 
                 int(backup_degrees*stepper_2_deg_to_step))
 
     time.sleep(1)
@@ -160,19 +162,14 @@ def home():
     
     # Home second axis
     for i in range(int(axis_2_degrees*stepper_2_deg_to_step)):
-        if i < (int(axis_2_degrees*stepper_2_deg_to_step)) and pi.read(lmt_pin):
+        if i < (int(axis_2_degrees*stepper_2_deg_to_step)) and pi.read(lmt_pin_2):
             stepper_2_homed = True
-        elif i == (int(axis_2_degrees*stepper_2_deg_to_step)):
+        elif i == (int(axis_2_degrees*stepper_2_deg_to_step))-1:
             shutdown("STEPPER 2 HOMING FAILED")
         else:
             step(step_pin_2, CCW)
-            time.sleep(wait)    # This adds to the step function wait time
+            time.sleep(wait)    # This adds to step wait time, slowing motor for homing
    
-    time.sleep(1)
-    
-    # Back second axis off limit switch to free circuit for first axis homing
-    start_steps(0, -1*int(backup_degrees*stepper_2_deg_to_step))
-
     time.sleep(1)
 
     # Re-enable stepper 1
@@ -180,18 +177,13 @@ def home():
 
     # Home first axis
     for i in range(int(axis_1_degrees*stepper_1_deg_to_step)):
-        if i < (int(axis_1_degrees*stepper_1_deg_to_step)) and pi.read(lmt_pin):
+        if i < (int(axis_1_degrees*stepper_1_deg_to_step)) and pi.read(lmt_pin_1):
             stepper_1_homed = True
-        elif i == (int(axis_1_degrees*stepper_2_deg_to_step)):
+        elif i == (int(axis_1_degrees*stepper_2_deg_to_step))-1:
             shutdown("STEPPER 1 HOMING FAILED")
         else:
             step(step_pin_1, CW)
-            time.sleep(wait)    # This adds to the step function wait time
-
-    time.sleep(1)
-    
-    # Return second axis to home
-    start_steps(0, int(backup_degrees*stepper_2_deg_to_step))
+            time.sleep(wait)    # This adds to step wait time, slowing motor for homing
 
     time.sleep(1)
 
@@ -352,7 +344,7 @@ def shutdown(result):
 
 try:
     # Setup callback to check for stop button press
-    cb = pi.callback(27, pigpio.FALLING_EDGE, stop_callback)
+    cb = pi.callback(stop_pin, pigpio.FALLING_EDGE, stop_callback)
     
     # Get current feeding day
     day = get_day(datetime.date.today().weekday())
@@ -361,7 +353,7 @@ try:
     home()
     
     # Add calibration adjustment to both axes
-    start_steps(int(stepper_cal_1*stepper_1_deg_to_step), int(stepper_cal_2*stepper_2_deg_to_step))
+    start_steps(stepper_cal_1, stepper_cal_2)
     time.sleep(1)
     
     # Go to predefined start position (x,y) before continuing cycle

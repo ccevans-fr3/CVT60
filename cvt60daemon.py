@@ -10,13 +10,13 @@ disable = 1         # Disable stepper
 
 pi = pigpio.pi()
 
-run_pin     =   02  # Run button
-sd_pin      =   03  # Shutdown button
+run_pin     =   2   # Run button
+sd_pin      =   3   # Shutdown button
 led_pin     =   16  # Status LED
 ena_pin_1   =   26  # First axis stepper enable (pin is default high)
 ena_pin_2   =   19  # Second axis stepper enable (pin is default high)
 servo_pin   =   27  # Servo controlling measure plate, PWM at 50Hz
-dc_pin      =   04  # DC vibration motor
+dc_pin      =   4   # DC vibration motor
 
 # Set up pins and ensure motors are disabled at startup
 pi.set_mode(run_pin, pigpio.INPUT)
