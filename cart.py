@@ -17,6 +17,9 @@ unit_number = '001'
 stepper_cal_1 = 2
 stepper_cal_2 = -2
 
+# Number of microsteps per full step (e.g. half step = 2)
+step_mode = 4
+
 # Number of columns (x) and rows (y) of jars on cart
 jar_num_x = 11
 jar_num_y = 7
@@ -34,8 +37,8 @@ arm_2 = 330
 
 # Coefficient for converting degrees to steps
 # (pulley tooth count/motor tooth count * steps per revolution/360)
-stepper_1_deg_to_step = 116/20 * 200/360
-stepper_2_deg_to_step = 80/20 * 200/360
+stepper_1_deg_to_step = 116/20 * 200/360 * step_mode
+stepper_2_deg_to_step = 80/20 * 200/360 * step_mode
 
 # Time to wait between individual steps in ms / 1000
 wait = 8 / 1000
@@ -86,8 +89,10 @@ pi.set_mode(servo_pin, pigpio.OUTPUT)
 pi.set_PWM_frequency(servo_pin, 50)
 pi.set_mode(dc_pin, pigpio.OUTPUT)
 pi.write(dc_pin, disable)
-pi.set_mode(lmt_pin, pigpio.INPUT)
-pi.set_pull_up_down(lmt_pin, pigpio.PUD_UP)
+pi.set_mode(lmt_pin_1, pigpio.INPUT)
+pi.set_pull_up_down(lmt_pin_1, pigpio.PUD_UP)
+pi.set_mode(lmt_pin_2, pigpio.INPUT)
+pi.set_pull_up_down(lmt_pin_2, pigpio.PUD_UP)
 pi.set_mode(stop_pin, pigpio.INPUT)
 pi.set_pull_up_down(stop_pin, pigpio.PUD_UP)
 
