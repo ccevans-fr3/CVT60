@@ -41,10 +41,10 @@ stepper_1_deg_to_step = 116/20 * 200/360 * step_mode
 stepper_2_deg_to_step = 80/20 * 200/360 * step_mode
 
 # Time to wait between individual steps in ms / 1000
-wait = 8 / 1000
+wait = (8 / step_mode) / 1000
 
 # Number of steps over which to implement easing function
-ease_count = 20
+ease_count = 20 * step_mode
 
 pi = pigpio.pi()
 
@@ -132,7 +132,7 @@ def easeinout(t):
     to reduce strain and prevent missed steps.
     """
 
-    b = 15 / 1000   # initial wait time (ms / 1000)
+    b = wait*4      # initial wait time
     c = wait - b    # change in wait time
     d = ease_count  # number of steps over which to change wait time
     
@@ -255,7 +255,7 @@ def step(stepper, direction):
     pi.write(stepper, 0)
     time.sleep(wait/2)
 
-def step_thread(stepper, step_count):
+def step_thread(stepper, step_count, sync):
     i = 0   # Current step number
 
     for s in range(abs(step_count)):
@@ -275,14 +275,30 @@ def step_thread(stepper, step_count):
         
         # Ease into and out of movement
         if i <= ease_count and i < abs(step_count)/2:
-            time.sleep(easeinout(i)-wait)
+            time.sleep(easeinout(i)-wait+sync)
         elif i >= abs(step_count)-ease_count:
-            time.sleep(easeinout(abs(step_count)-i)-wait)
+            time.sleep(easeinout(abs(step_count)-i)-wait+sync)
+        else:
+            time.sleep(sync)
         
 def start_steps(step_count_1, step_count_2):
+    
+    max_step_count = max(step_count_1, step_count_2)
+    duration = 0
+    for i in range(1, max_steps):
+        if i <= ease_count and i < abs(max_step_count)/2:
+            duration += easeinout(i)-wait
+        elif i >= abs(max_step_count)-ease_count:
+            duration += easeinout(abs(max_step_count)-i)-wait
+        else:
+            duration += wait
+            
+    sync_1 = duration/step_count_1 - duration/max_step_count
+    sync_2 = duration/step_count_2 - duration/max_step_count
+    
     # Create stepper threads
-    t1 = threading.Thread(target=step_thread, args=(1, step_count_1))
-    t2 = threading.Thread(target=step_thread, args=(2, step_count_2))
+    t1 = threading.Thread(target=step_thread, args=(1, step_count_1, sync_1))
+    t2 = threading.Thread(target=step_thread, args=(2, step_count_2, sync_2))
 
     # Start stepper threads
     t1.start()
