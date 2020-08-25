@@ -14,7 +14,6 @@ pi = pigpio.pi()
 
 run_pin     =   2   # Run button
 sd_pin      =   3   # Shutdown button
-led_pin     =   16  # Status LED
 ena_pin_1   =   26  # First axis stepper enable (pin is default high)
 ena_pin_2   =   19  # Second axis stepper enable (pin is default high)
 servo_pin   =   27  # Servo controlling measure plate, PWM at 50Hz
@@ -25,7 +24,6 @@ pi.set_mode(run_pin, pigpio.INPUT)
 pi.set_pull_up_down(run_pin, pigpio.PUD_UP)
 pi.set_mode(sd_pin, pigpio.INPUT)
 pi.set_pull_up_down(sd_pin, pigpio.PUD_UP)
-pi.set_mode(led_pin, pigpio.OUTPUT)
 pi.set_mode(ena_pin_1, pigpio.OUTPUT)
 pi.write(ena_pin_1, disable)
 pi.set_mode(ena_pin_2, pigpio.OUTPUT)
@@ -50,18 +48,19 @@ def pulse(wait):
         pixels.fill((r*i//255,g*i//255,b*i//255))
         pixels.show()
         time.sleep(wait)
-        
+    
     for i in range(255, -1, -1):
         pixels.fill((r*i//255,g*i//255,b*i//255))
         pixels.show()
-        time.sleep(wait)    
+        time.sleep(wait)
 
 def shutdown_callback(gpio, level, tick):
     for i in range(5):
         time.sleep(0.1)
         if pi.read(sd_pin):
             return
-    pi.write(led_pin, 0)
+    pixels.fill((0,0,0))
+    pixels.show()
     pi.stop()
     os.system("sudo shutdown now -h")
 

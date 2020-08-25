@@ -13,9 +13,9 @@ from subprocess import call
 unit_number = '001'
 
 # Step adjustment to bring axes parallel with wall when homed
-# (positive = CW, negative = CCW)
-stepper_cal_1 = 2
-stepper_cal_2 = -2
+# (positive = toward wall, negative = away from wall)
+stepper_cal_1 = 5
+stepper_cal_2 = 10
 
 # Number of microsteps per full step (e.g. half step = 2)
 step_mode = 8
@@ -46,6 +46,7 @@ wait = (8 / step_mode) / 1000
 # Number of steps over which to implement easing function
 ease_count = 20 * step_mode
 
+# Assign pigpio to Raspberry Pi
 pi = pigpio.pi()
 
 # Initialize stepper positions
@@ -358,7 +359,7 @@ try:
     home()
     
     # Add calibration adjustment to both axes
-    start_steps(stepper_cal_1, stepper_cal_2)
+    start_steps(stepper_cal_1*step_mode, stepper_cal_2*step_mode)
     time.sleep(1)
     
     # Go to predefined start position (x,y) before continuing cycle
