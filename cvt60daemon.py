@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
 import pigpio
-from time import sleep
+import time
 import os
 import subprocess
+import board
+import neopixel
 
 enable = 0          # Enable stepper
 disable = 1         # Disable stepper
@@ -33,9 +35,30 @@ pi.set_servo_pulsewidth(servo_pin, 0)
 pi.set_mode(dc_pin, pigpio.OUTPUT)
 pi.write(dc_pin, disable)
 
+# GPIO 18 must be used with neopixels
+pixels = neopixel.NeoPixel(board.D18, 8, brightness=0.5, auto_write=False)
+pixels.fill((0,0,0))
+pixels.show()
+
+# Set hue of led bar (0-255)
+r = 255
+g = 100
+b = 0
+
+def pulse(wait):
+    for i in range(255):
+        pixels.fill((r*i//255,g*i//255,b*i//255))
+        pixels.show()
+        time.sleep(wait)
+        
+    for i in range(255, -1, -1):
+        pixels.fill((r*i//255,g*i//255,b*i//255))
+        pixels.show()
+        time.sleep(wait)    
+
 def shutdown_callback(gpio, level, tick):
     for i in range(5):
-        sleep(0.1)
+        time.sleep(0.1)
         if pi.read(sd_pin):
             return
     pi.write(led_pin, 0)
@@ -44,7 +67,7 @@ def shutdown_callback(gpio, level, tick):
 
 def run_callback(gpio, level, tick):
     for i in range(5):
-        sleep(0.1)
+        time.sleep(0.1)
         if pi.read(run_pin):
             return
     subprocess.call(['/usr/bin/python3', '/home/pi/cvt60/cart.py'])
@@ -53,9 +76,11 @@ def run_callback(gpio, level, tick):
 cb1 = pi.callback(sd_pin, pigpio.FALLING_EDGE, shutdown_callback)
 cb2 = pi.callback(run_pin, pigpio.FALLING_EDGE, run_callback)
 
-while True:
-    pi.write(led_pin, 1)
-    sleep(0.1)
-    pi.write(led_pin, 0)
-    sleep(3.9)
+try:
+    while True:
+        pulse(0.02)     # Pulse the led bar with an argument of wait time
+
+except:
+    pixels.fill((0,0,0))
+    pixels.show()
 

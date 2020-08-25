@@ -18,7 +18,7 @@ stepper_cal_1 = 2
 stepper_cal_2 = -2
 
 # Number of microsteps per full step (e.g. half step = 2)
-step_mode = 4
+step_mode = 8
 
 # Number of columns (x) and rows (y) of jars on cart
 jar_num_x = 11
@@ -266,9 +266,9 @@ def step_thread(stepper, step_count):
                 step(step_pin_1, CCW)
         elif stepper == 2:
             if step_count > 0:
-                step(step_pin_2, CW)
-            elif step_count < 0:
                 step(step_pin_2, CCW)
+            elif step_count < 0:
+                step(step_pin_2, CW)
         
         # Increment step counter
         i += 1 
@@ -308,12 +308,12 @@ def dispense(i):
     # Load
     set_servo_angle(load_angle[i] + offset)
     time.sleep(0.5)
-    vibrate(1)
+    vibrate(0.5)
 
     # Dispense
     set_servo_angle(dispense_angle[i] + offset)
     time.sleep(0.5)
-    vibrate(1)
+    vibrate(0.5)
 
 def stop_callback(gpio, level, tick):
     for i in range(5):
@@ -335,7 +335,7 @@ def shutdown(result):
     
     # Print report
     print(str(datetime.datetime.now()) + ": " + result)
-    file = open("/home/pi/Desktop/log.txt", "a+")
+    file = open("/home/pi/log.txt", "a+")
     file.write("\n" + str(datetime.datetime.now()) + ": " + result)
     file.close()
     
