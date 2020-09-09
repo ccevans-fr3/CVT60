@@ -260,6 +260,7 @@ def step_thread(stepper, step_count):
     i = 0   # Current step number
 
     for s in range(abs(step_count)):
+    #TODO the check for which stepper is used may be redundant
         if stepper == 1:
             if step_count > 0:
                 step(step_pin_1, CW)
@@ -317,7 +318,7 @@ def dispense(i):
     vibrate(0.5)
 
 def stop_callback(gpio, level, tick):
-    for i in range(5):
+    for i in range(20):
         time.sleep(0.1)
         if pi.read(27):
             return
