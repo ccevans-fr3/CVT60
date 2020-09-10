@@ -6,6 +6,7 @@ import os
 import subprocess
 import board
 import neopixel
+import requests
 
 enable = 0          # Enable stepper
 disable = 1         # Disable stepper
@@ -39,18 +40,29 @@ pixels.fill((0,0,0))
 pixels.show()
 
 # Set hue of led bar (0-255)
-r = 255
-g = 100
-b = 0
+rgb = (255,200,0)
+
+url = 'http://clients3.google.com/generate_204'
 
 def pulse(wait):
-    for i in range(255):
-        pixels.fill((r*i//255,g*i//255,b*i//255))
+    global rgb
+    
+    for i in range(0,255,2):
+        pixels.fill((rgb[0]*i//255,rgb[1]*i//255,rgb[2]*i//255))
         pixels.show()
         time.sleep(wait)
     
-    for i in range(255, -1, -1):
-        pixels.fill((r*i//255,g*i//255,b*i//255))
+    time.sleep(1)
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 204:
+            rgb = (40,255,0)
+            
+    except:
+        rgb = (255,0,0)
+    
+    for i in range(255,-1,-2):
+        pixels.fill((rgb[0]*i//255,rgb[1]*i//255,rgb[2]*i//255))
         pixels.show()
         time.sleep(wait)
 
@@ -61,6 +73,7 @@ def shutdown_callback(gpio, level, tick):
             return
     pixels.fill((0,0,0))
     pixels.show()
+    time.sleep(0.5)
     pi.stop()
     os.system("sudo shutdown now -h")
 
