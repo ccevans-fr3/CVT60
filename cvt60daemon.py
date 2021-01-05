@@ -1,18 +1,19 @@
 #!/usr/bin/python3
 
 import pigpio
-import time
 import os
 import subprocess
 import board
 import neopixel
 import requests
+from time import sleep
 
 enable = 0          # Enable stepper
 disable = 1         # Disable stepper
 
 pi = pigpio.pi()
 
+# Pin assignments. All numbers are BCM, not physical pin number.
 run_pin     =   2   # Run button
 sd_pin      =   3   # Shutdown button
 ena_pin_1   =   26  # First axis stepper enable (pin is default high)
@@ -50,38 +51,35 @@ def pulse(wait):
     for i in range(0,255,2):
         pixels.fill((rgb[0]*i//255,rgb[1]*i//255,rgb[2]*i//255))
         pixels.show()
-        time.sleep(wait)
+        sleep(wait)
+    sleep(1)
     
-    time.sleep(1)
     try:
         response = requests.get(url, timeout=5)
         if response.status_code == 204:
             rgb = (40,255,0)
-            
     except:
         rgb = (255,0,0)
     
     for i in range(255,-1,-2):
         pixels.fill((rgb[0]*i//255,rgb[1]*i//255,rgb[2]*i//255))
         pixels.show()
-        time.sleep(wait)
+        sleep(wait)
 
 def shutdown_callback(gpio, level, tick):
     for i in range(5):
-        time.sleep(0.1)
-        if pi.read(sd_pin):
-            return
+        sleep(0.1)
+        if pi.read(sd_pin): return
     pixels.fill((0,0,0))
     pixels.show()
-    time.sleep(0.5)
+    sleep(0.5)
     pi.stop()
     os.system("sudo shutdown now -h")
 
 def run_callback(gpio, level, tick):
     for i in range(5):
-        time.sleep(0.1)
-        if pi.read(run_pin):
-            return
+        sleep(0.1)
+        if pi.read(run_pin): return
     subprocess.call(['/usr/bin/python3', '/home/pi/cvt60/cart.py'])
 
 # Set button callbacks

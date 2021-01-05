@@ -8,7 +8,7 @@ unit = sys.argv[1]
 result = sys.argv[2]
 
 scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('cvt60logger-d07c36e7269f.json', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
 client = gspread.authorize(creds)
 
 for attempt in range(10):
@@ -18,7 +18,9 @@ for attempt in range(10):
         date = str(datetime.datetime.now())
 
         row = [date[:10], date[11:19], unit, result]
-        index = 6   # Report data to be inserted in row 6
+        # Insert report on row 6
+        # If more than four CVT60 units are active, this will need to be changed
+        index = 6
         sheet.insert_row(row, index)
         break
 
