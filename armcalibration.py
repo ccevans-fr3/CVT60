@@ -1,20 +1,23 @@
 #!/usr/bin/python3
 
 import math
-import datetime
 import pigpio
 import sys
-import os
 import threading
 from time import sleep
-from subprocess import call
+
+if len(sys.argv) < 2:
+    print("Provide 2 arguments:\nStepper 1 calibration value\nStepper 2 calibration value")
+    print("Positive values for each axis indicate steps toward wall")
+    sys.exit()
+
+# This script must be passed two arguments: first axis calibation value
+# and second axis calibration value
+stepper_cal_1 = sys.argv[1]
+stepper_cal_2 = sys.argv[2]
 
 # Serial number of CVT60 unit
 unit_number = '001'
-
-# Step adjustment to bring axes parallel with wall when homed
-# (positive = toward wall, negative = away from wall)
-stepper_cal_1, stepper_cal_2 = 5, 10
 
 # Number of microsteps per full step (e.g. half step = 2)
 step_mode = 8
@@ -92,39 +95,6 @@ pi.set_pull_up_down(lmt_pin_2, pigpio.PUD_UP)
 pi.set_mode(stop_pin, pigpio.INPUT)
 pi.set_pull_up_down(stop_pin, pigpio.PUD_UP)
 
-# Loading and dispensing angles for measure servo (degrees)
-load_angle = {
-    1:0,
-    2:31,
-    3:64.8,
-    4:101.3,
-    5:140.2,
-    }
-dispense_angle = {
-    1:15.5,
-    2:47.9,
-    3:83,
-    4:120.7,
-    5:160.9,
-    }
-# Offset for measuring disc (degrees)
-offset = 6
-
-
-"""
-Returns feeding day (1-5) when given day of week
-"""
-def get_day(i):
-    switcher={
-        0:5,    # Monday    (day 5)
-        1:1,    # Tuesday   (demo/testing)
-        2:1,    # Wednesday (demo/testing)
-        3:1,    # Thursday  (day 1)
-        4:2,    # Friday    (day 2)
-        5:3,    # Saturday  (day 3)
-        6:4,    # Sunday    (day 4)
-        }
-    return switcher.get(i, "invalid day")
 
 """
 Quadratic ease in/out function.
@@ -231,10 +201,6 @@ def get_step_counts(x, y):
     step_count_1 = int(stepper_1_deg_to_step * (current_stepper_1 - stepper_1))
     step_count_2 = int(stepper_2_deg_to_step * (current_stepper_2 - stepper_2))
     
-    print("x=" + str(x) + ", y=" + str(y))
-    print("angle_1=" + str(stepper_1) + ", angle_2=" + str(stepper_2))
-    print("---------------------------------------------")
-    
     start_steps(step_count_1, step_count_2)
 
 def start_steps(step_count_1, step_count_2):
@@ -281,29 +247,6 @@ def step(stepper, direction):
     pi.write(stepper, 0)
     sleep(wait)
 
-def set_servo_angle(angle):
-    servo_wait = 70 / 1000
-    pw = angle * 2000/180 + 500
-    pi.set_servo_pulsewidth(servo_pin, pw)
-    sleep(servo_wait)
-    
-def vibrate(seconds):
-    pi.write(dc_pin, enable)
-    sleep(seconds)
-    pi.write(dc_pin, disable)
-    sleep(0.5)
-    
-def dispense(i):
-    # Load
-    set_servo_angle(load_angle[i] + offset)
-    sleep(0.5)
-    vibrate(0.5)
-
-    # Dispense
-    set_servo_angle(dispense_angle[i] + offset)
-    sleep(0.5)
-    vibrate(0.5)
-
 def stop_callback(gpio, level, tick):
     for i in range(20):
         sleep(0.1)
@@ -318,15 +261,6 @@ def shutdown(result):
     pi.set_servo_pulsewidth(servo_pin, 0)
     pi.write(dc_pin, disable)
     
-    # Print report
-    print(str(datetime.datetime.now()) + ": " + result)
-    file = open("/home/pi/log.txt", "a+")
-    file.write("\n" + str(datetime.datetime.now()) + ": " + result)
-    file.close()
-    
-    # Log report on Google Sheets
-    call(['/usr/bin/python3', 'logger.py', unit_number, result])
-    
     print("Shutdown complete.")
     sleep(2)
     sys.exit()
@@ -335,34 +269,28 @@ def shutdown(result):
 try:
     # Set callback to check for stop button press
     cb = pi.callback(stop_pin, pigpio.FALLING_EDGE, stop_callback)
-    
-    # Get current feeding day
-    day = get_day(datetime.date.today().weekday())
 
-    # Home motors before beginning
     home()
+    goto_coords(4,4)
     
-    # Go to predefined start position (x,y) before continuing cycle
-    # This is implemented to avoid dispenser hitting wall on the way to jar(0,0)
-    goto_coords(4, 4)
+    goto_coords(0,0)        # Back left
+    sleep(5)
+    goto_coords(0,6)        # Front left
+    sleep(5)
+    goto_coords(5,6)        # Front center
+    sleep(5)
+    goto_coords(10,6)       # Front right
+    sleep(5)
+    goto_coords(10,0)       # Back right
+    sleep(5)
+    goto_coords(5,0)        # Back center
+    sleep(5)
 
-    # Run main dispensing procedure
-    for x in range(jar_cols):
-        if x % 2 == 0:
-            for y in range(jar_rows):               # Forward for even-numbered columns
-                goto_coords(x, y)                   # Goto x/y coordinates of next jar
-                dispense(day)                       # Accepts day integer 1-5
-        else:
-            for y in range(jar_rows-1, -1, -1):     # Reverse for odd-numbered columns
-                goto_coords(x, y)                   # Go to x/y coordinates of next jar
-                dispense(day)                       # Accepts day integer 1-5
-
-    # Return steppers to home position
-    goto_coords(4, 4)
+    goto_coords(4,4)
     home()
     
     # Execute process cleanup and pass result as argument
-    shutdown("SUCCESS")
+    shutdown("CALIBRATION COMPLETE")
     
 except:
     shutdown(str(sys.exc_info()))
