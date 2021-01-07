@@ -325,7 +325,7 @@ def shutdown(result):
     file.close()
     
     # Log report on Google Sheets
-    call(['/usr/bin/python3', 'logger.py', unit_number, result])
+    call(['/usr/bin/python3', '/home/pi/cvt60/logger.py', unit_number, result])
     
     print("Shutdown complete.")
     sleep(2)
@@ -358,7 +358,7 @@ try:
                 dispense(day)                       # Accepts day integer 1-5
 
     # Return steppers to home position
-    goto_coords(4, 4)
+    goto_coords(6, 4)
     home()
     
     # Execute process cleanup and pass result as argument
