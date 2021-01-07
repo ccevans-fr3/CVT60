@@ -13,8 +13,8 @@ if len(sys.argv) < 2:
 
 # This script must be passed two arguments: first axis calibation value
 # and second axis calibration value
-stepper_cal_1 = sys.argv[1]
-stepper_cal_2 = sys.argv[2]
+stepper_cal_1 = int(sys.argv[1])
+stepper_cal_2 = int(sys.argv[2])
 
 # Serial number of CVT60 unit
 unit_number = '001'

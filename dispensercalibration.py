@@ -15,7 +15,7 @@ if len(sys.argv) < 1:
     sys.exit()
 
 # This script must be passed one argument: measuring disk offset in degrees
-offset = sys.argv[1]
+offset = int(sys.argv[1])
 
 # Serial number of CVT60 unit
 unit_number = '001'
