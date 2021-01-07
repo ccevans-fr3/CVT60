@@ -176,7 +176,7 @@ def home():
 
     # Home first axis
     for i in range(int(axis_1_degrees*stepper_1_deg_to_step)):
-        if pi.red(lmt_pin_1): break     # Axis homed
+        if pi.read(lmt_pin_1): break     # Axis homed
         elif i < (int(axis_1_degrees*stepper_1_deg_to_step)):
             step(step_pin_1, CW)
             sleep(wait)                 # Extra wait slows motor for homing
@@ -231,9 +231,9 @@ def get_step_counts(x, y):
     step_count_1 = int(stepper_1_deg_to_step * (current_stepper_1 - stepper_1))
     step_count_2 = int(stepper_2_deg_to_step * (current_stepper_2 - stepper_2))
     
-    print("x=" + str(x) + ", y=" + str(y))
-    print("angle_1=" + str(stepper_1) + ", angle_2=" + str(stepper_2))
-    print("---------------------------------------------")
+#    print("x=" + str(x) + ", y=" + str(y))
+#    print("angle_1=" + str(stepper_1) + ", angle_2=" + str(stepper_2))
+#    print("---------------------------------------------")
     
     start_steps(step_count_1, step_count_2)
 
