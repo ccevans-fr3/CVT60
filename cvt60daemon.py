@@ -67,7 +67,7 @@ def pulse(wait):
         sleep(wait)
 
 def shutdown_callback(gpio, level, tick):
-    for i in range(5):
+    for i in range(20):
         sleep(0.1)
         if pi.read(sd_pin): return
     pixels.fill((0,0,0))
@@ -77,7 +77,7 @@ def shutdown_callback(gpio, level, tick):
     os.system("sudo shutdown now -h")
 
 def run_callback(gpio, level, tick):
-    for i in range(5):
+    for i in range(20):
         sleep(0.1)
         if pi.read(run_pin): return
     subprocess.call(['/usr/bin/python3', '/home/pi/cvt60/cart.py'])

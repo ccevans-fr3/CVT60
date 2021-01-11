@@ -305,7 +305,7 @@ def dispense(i):
     vibrate(0.5)
 
 def stop_callback(gpio, level, tick):
-    for i in range(20):
+    for i in range(10):
         sleep(0.1)
         if pi.read(27): return
             
@@ -315,8 +315,10 @@ def shutdown(result):
     # Release motors
     pi.write(ena_pin_1, disable)
     pi.write(ena_pin_2, disable)
+    sleep(1)        # Extra time before pigpio focus returns to daemon
     pi.set_servo_pulsewidth(servo_pin, 0)
     pi.write(dc_pin, disable)
+    pi.stop()       # Stop pigpio and return button input focus to daemon
     
     # Print report
     print(str(datetime.datetime.now()) + ": " + result)
