@@ -146,11 +146,11 @@ def home():
 
     # Home first axis
     for i in range(int(axis_1_degrees*stepper_1_deg_to_step)):
-        if pi.red(lmt_pin_1): break     # Axis homed
+        if pi.read(lmt_pin_1): break     # Axis homed
         elif i < (int(axis_1_degrees*stepper_1_deg_to_step)):
             step(step_pin_1, CW)
             sleep(wait)                 # Extra wait slows motor for homing
-        elif i == (int(axis_1_degrees*stepper_2_deg_to_step))-1:
+        elif i == (int(axis_1_degrees*stepper_1_deg_to_step))-1:
             shutdown("STEPPER 1 HOMING FAILED")
     sleep(1)
     
@@ -273,20 +273,19 @@ try:
     home()
     goto_coords(4,4)
     
-    goto_coords(0,0)        # Back left
-    sleep(5)
-    goto_coords(0,6)        # Front left
-    sleep(5)
-    goto_coords(5,6)        # Front center
+    goto_coords(10,0)       # Back right
     sleep(5)
     goto_coords(10,6)       # Front right
     sleep(5)
-    goto_coords(10,0)       # Back right
+    goto_coords(5,6)        # Front center
+    sleep(5)
+    goto_coords(0,6)        # Front left
+    sleep(5)
+    goto_coords(0,0)        # Back left
     sleep(5)
     goto_coords(5,0)        # Back center
     sleep(5)
 
-    goto_coords(4,4)
     home()
     
     # Execute process cleanup and pass result as argument

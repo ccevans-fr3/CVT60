@@ -180,7 +180,7 @@ def home():
         elif i < (int(axis_1_degrees*stepper_1_deg_to_step)):
             step(step_pin_1, CW)
             sleep(wait)                 # Extra wait slows motor for homing
-        elif i == (int(axis_1_degrees*stepper_2_deg_to_step))-1:
+        elif i == (int(axis_1_degrees*stepper_1_deg_to_step))-1:
             shutdown("STEPPER 1 HOMING FAILED")
     sleep(1)
     
