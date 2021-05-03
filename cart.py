@@ -51,16 +51,15 @@ stepper_1 = stepper_2 = 0
 
 CW = 0                  # Clockwise stepper movement
 CCW = 1                 # Counterclockwise stepper movement
-enable = 0              # Enable stepper
-disable = 1             # Disable stepper
+enable = 1              # Enable stepper
+disable = 0             # Disable stepper
 
 # Pin assignments. All numbers are BCM, not physical pin number.
 step_pin_1   =    21    # First axis stepper movement
 dir_pin_1    =    13    # First axis stepper direction
-ena_pin_1    =    26    # First axis stepper enable (pin is default high)
 step_pin_2   =    12    # Second axis stepper movement
 dir_pin_2    =    20    # Second axis stepper direction
-ena_pin_2    =    19    # Second axis stepper enable (pin is default high)
+ena_pin      =    24    # Stepper enable via relay switch
 
 servo_pin    =    27    # Servo controlling measure plate, PWM at 50Hz
 dc_pin       =    4     # DC vibration motor
@@ -72,19 +71,17 @@ pi.set_mode(step_pin_1, pigpio.OUTPUT)
 pi.write(step_pin_1, 0)
 pi.set_mode(dir_pin_1, pigpio.OUTPUT)
 pi.write(dir_pin_1, 0)
-pi.set_mode(ena_pin_1, pigpio.OUTPUT)
-pi.write(ena_pin_1, enable)
 pi.set_mode(step_pin_2, pigpio.OUTPUT)
 pi.write(step_pin_2, 0)
 pi.set_mode(dir_pin_2, pigpio.OUTPUT)
 pi.write(dir_pin_2, 0)
-pi.set_mode(ena_pin_2, pigpio.OUTPUT)
-pi.write(ena_pin_2, enable)
+pi.set_mode(ena_pin, pigpio.OUTPUT)
+pi.write(ena_pin, enable)
 
 pi.set_mode(servo_pin, pigpio.OUTPUT)
 pi.set_PWM_frequency(servo_pin, 50)
 pi.set_mode(dc_pin, pigpio.OUTPUT)
-pi.write(dc_pin, disable)
+pi.write(dc_pin, 1)
 pi.set_mode(lmt_pin_1, pigpio.INPUT)
 pi.set_pull_up_down(lmt_pin_1, pigpio.PUD_UP)
 pi.set_mode(lmt_pin_2, pigpio.INPUT)
@@ -158,9 +155,6 @@ def home():
                 int(backup_degrees*stepper_2_deg_to_step))
     sleep(1)
     
-    # Release stepper 1 while second axis is homing
-    pi.write(ena_pin_1, disable)
-    
     # Home second axis
     for i in range(int(axis_2_degrees*stepper_2_deg_to_step)):
         if pi.read(lmt_pin_2): break    # Axis homed
@@ -170,9 +164,6 @@ def home():
         elif i == (int(axis_2_degrees*stepper_2_deg_to_step))-1:
             shutdown("STEPPER 2 HOMING FAILED")
     sleep(1)
-
-    # Re-enable stepper 1
-    pi.write(ena_pin_1, enable)
 
     # Home first axis
     for i in range(int(axis_1_degrees*stepper_1_deg_to_step)):
@@ -288,9 +279,9 @@ def set_servo_angle(angle):
     sleep(servo_wait)
     
 def vibrate(seconds):
-    pi.write(dc_pin, enable)
+    pi.write(dc_pin, 0)
     sleep(seconds)
-    pi.write(dc_pin, disable)
+    pi.write(dc_pin, 1)
     sleep(0.5)
     
 def dispense(i):
@@ -305,7 +296,7 @@ def dispense(i):
     vibrate(0.5)
 
 def stop_callback(gpio, level, tick):
-    for i in range(10):
+    for i in range(5):
         sleep(0.1)
         if pi.read(27): return
             
@@ -313,11 +304,10 @@ def stop_callback(gpio, level, tick):
 
 def shutdown(result):    
     # Release motors
-    pi.write(ena_pin_1, disable)
-    pi.write(ena_pin_2, disable)
+    pi.write(ena_pin, disable)
     sleep(1)        # Extra time before pigpio focus returns to daemon
     pi.set_servo_pulsewidth(servo_pin, 0)
-    pi.write(dc_pin, disable)
+    pi.write(dc_pin, 1)
     pi.stop()       # Stop pigpio and return button input focus to daemon
     
     # Print report
@@ -335,6 +325,9 @@ def shutdown(result):
 
 
 try:
+    # Sleep to prevent start switch input from triggering stop callback
+    sleep(2)
+    
     # Set callback to check for stop button press
     cb = pi.callback(stop_pin, pigpio.FALLING_EDGE, stop_callback)
     

@@ -8,16 +8,15 @@ import neopixel
 import requests
 from time import sleep
 
-enable = 0          # Enable stepper
-disable = 1         # Disable stepper
+enable = 1          # Enable stepper
+disable = 0         # Disable stepper
 
 pi = pigpio.pi()
 
 # Pin assignments. All numbers are BCM, not physical pin number.
 run_pin     =   2   # Run button
 sd_pin      =   3   # Shutdown button
-ena_pin_1   =   26  # First axis stepper enable (pin is default high)
-ena_pin_2   =   19  # Second axis stepper enable (pin is default high)
+ena_pin     =   24  # Stepper enable via relay switch
 servo_pin   =   27  # Servo controlling measure plate, PWM at 50Hz
 dc_pin      =   4   # DC vibration motor
 
@@ -26,14 +25,12 @@ pi.set_mode(run_pin, pigpio.INPUT)
 pi.set_pull_up_down(run_pin, pigpio.PUD_UP)
 pi.set_mode(sd_pin, pigpio.INPUT)
 pi.set_pull_up_down(sd_pin, pigpio.PUD_UP)
-pi.set_mode(ena_pin_1, pigpio.OUTPUT)
-pi.write(ena_pin_1, disable)
-pi.set_mode(ena_pin_2, pigpio.OUTPUT)
-pi.write(ena_pin_2, disable)
+pi.set_mode(ena_pin, pigpio.OUTPUT)
+pi.write(ena_pin, disable)
 pi.set_mode(servo_pin, pigpio.OUTPUT)
 pi.set_servo_pulsewidth(servo_pin, 0)
 pi.set_mode(dc_pin, pigpio.OUTPUT)
-pi.write(dc_pin, disable)
+pi.write(dc_pin, 1)
 
 # GPIO 18 must be used with neopixels
 pixels = neopixel.NeoPixel(board.D18, 8, brightness=0.5, auto_write=False)
@@ -77,7 +74,7 @@ def shutdown_callback(gpio, level, tick):
     os.system("sudo shutdown now -h")
 
 def run_callback(gpio, level, tick):
-    for i in range(20):
+    for i in range(5):
         sleep(0.1)
         if pi.read(run_pin): return
     subprocess.call(['/usr/bin/python3', '/home/pi/cvt60/cart.py'])
